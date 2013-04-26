@@ -2,7 +2,7 @@
 import MainPanel
 import wx
 app = wx.App(False)
-frame = wx.Frame(None, title='archie', size=(400, 800))
+frame = wx.Frame(None, title='archie', size=(700, 500))
 panel = MainPanel.MPanel(frame)
 frame.Show()
 app.MainLoop()

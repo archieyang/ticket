@@ -6,6 +6,13 @@ import time
 import sys
 import threading
 import wx
+#######################################################
+#Bugs here. The checker only checks the D and G train.#
+#T,K and normal train need to be added.               #
+#######################################################
+
+ticket_type = [u'商务座', u'特等座', u'一等座', u'二等座',
+               u'高级软卧', u'软卧', u'硬卧', u'软座', u'硬座', u'无座']
 
 
 class Checker(threading.Thread):
@@ -114,7 +121,8 @@ def send_mail_to(mailto, ticket_msg):
     smtp.ehlo()
     smtp.login(mailfrom, 'ticketticket')
 
-    header = 'To:' + mailto + '\n' + 'From: ' + mailfrom + '\n' + 'Subject:FIND A TICKET FOR YOU !!!  ' + ticket_msg
+    header = 'To:' + mailto + '\n' + 'From: ' + mailfrom + \
+        '\n' + 'Subject:FIND A TICKET FOR YOU !!!  ' + ticket_msg
 
     smtp.sendmail(mailfrom, mailto, header)
     smtp.quit()

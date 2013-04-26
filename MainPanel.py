@@ -1,6 +1,8 @@
 # coding=utf-8
 import wx
 import checker
+from checker import ticket_type
+from MultiCheckBox import MultiCheckBox
 
 
 class MPanel(wx.Panel):
@@ -41,11 +43,6 @@ class MPanel(wx.Panel):
         timeBox.Add(self.timeInputFrom)
         timeBox.Add(self.timeInputTo)
 
-        ticket_type = [u'商务座', u'特等座', u'一等座', u'二等座',
-                       u'高级软卧', u'软卧', u'硬卧', u'软座', u'硬座', u'无座']
-        seatBox = wx.RadioBox(self, label=seat, choices=ticket_type,
-                              majorDimension=5)
-
         mailBox = wx.BoxSizer(wx.VERTICAL)
         self.mailLabel = wx.StaticText(self, label=email)
         self.mailInput = wx.TextCtrl(self, size=(140, -1))
@@ -60,10 +57,10 @@ class MPanel(wx.Panel):
         mainSizer.Add(cityBox, 0, wx.ALL, 5)
         mainSizer.Add(dateBox, 0, wx.ALL, 5)
         mainSizer.Add(timeBox, 0, wx.ALL, 5)
-        mainSizer.Add(seatBox, 0, wx.ALL, 5)
+        mainSizer.Add(MultiCheckBox(self, ticket_type), 0, wx.ALL, 5)
         mainSizer.Add(mailBox, 0, wx.ALL, 5)
         mainSizer.Add(self.startButton, 0, wx.ALL, 5)
-        mainSizer.Add(self.log,1, wx.EXPAND|wx.ALL, 5)
+        mainSizer.Add(self.log, 1, wx.EXPAND | wx.ALL, 5)
 
         self.SetSizerAndFit(mainSizer)
 
