@@ -8,6 +8,9 @@ class MultiCheckBox(wx.BoxSizer):
     def __init__(self, panel, argList):
         wx.BoxSizer.__init__(self, wx.HORIZONTAL)
         self.panel = panel
+        self.cbList = []
+
         for s in argList:
             cb = wx.CheckBox(panel, label=s)
+            self.cbList.append(cb)
             self.Add(cb)
