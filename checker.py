@@ -3,7 +3,6 @@ import urllib2
 import re
 import smtplib
 import time
-import sys
 import threading
 import wx
 #######################################################

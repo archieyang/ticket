@@ -8,11 +8,17 @@ class TimeSelector(wx.BoxSizer):
     def __init__(self, panel):
         wx.BoxSizer.__init__(self, wx.HORIZONTAL)
         comboStyle = wx.CB_DROPDOWN | wx.CB_READONLY
+        hCandidate = [str(x) for x in range(0, 24)]
+        for i in range(0, 9):
+            hCandidate[i] = "0" + hCandidate[i]
         self.hourCombo = wx.ComboBox(panel, size=(95, -1),
-                                     choices=[str(x) for x in range(0, 24)],
+                                     choices=hCandidate,
                                      style=comboStyle)
+        mCandidate = [str(x) for x in range(0, 60)]
+        for i in range(0, 9):
+            mCandidate[i] = "0" + mCandidate[i]
         self.minCombo = wx.ComboBox(panel, size=(95, -1),
-                                    choices=[str(x) for x in range(0, 60)],
+                                    choices=mCandidate,
                                     style=comboStyle)
         self.AddMany([self.hourCombo, self.minCombo])
 
