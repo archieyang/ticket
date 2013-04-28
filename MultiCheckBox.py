@@ -14,3 +14,11 @@ class MultiCheckBox(wx.BoxSizer):
             cb = wx.CheckBox(panel, label=s)
             self.cbList.append(cb)
             self.Add(cb)
+
+    def getValue(self):
+        res = []
+        for num, cb in enumerate(self.cbList):
+            if cb.IsChecked():
+                res.append(num)
+
+        return res

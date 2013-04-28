@@ -178,9 +178,8 @@ def get_city_code(city_name):
 /station_name.js?version=1.40')
     city_list = urllib2.urlopen(req).read()
     # print city_list.decode('utf8').encode('gbk')
-    in_coding = sys.stdin.encoding
-    if(in_coding is not None):
-        city_name = city_name.encode('utf8')
+
+    city_name = city_name.encode('utf8')
     city_rx = re.compile('\|'+city_name + '\|.+?\|')
     city_code = city_rx.search(city_list).group(0)[-4:-1]
     return city_code

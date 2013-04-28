@@ -3,6 +3,8 @@ import wx
 import checker
 from checker import ticket_type
 from MultiCheckBox import MultiCheckBox
+from TimeSelector import TimeSelector
+from DateSelector import DateSelector
 
 
 class MPanel(wx.Panel):
@@ -31,17 +33,19 @@ class MPanel(wx.Panel):
 
         dateBox = wx.BoxSizer(wx.HORIZONTAL)
         self.dateLabel = wx.StaticText(self, label=date)
-        self.dateInput = wx.TextCtrl(self, size=(140, -1))
-        dateBox.Add(self.dateLabel)
-        dateBox.Add(self.dateInput)
+
+        self.startDateCombo = DateSelector(self)
+        dateBox.AddMany([self.dateLabel, self.startDateCombo])
 
         timeBox = wx.BoxSizer(wx.HORIZONTAL)
         self.timeLabel = wx.StaticText(self, label=time)
-        self.timeInputFrom = wx.TextCtrl(self, size=(140, -1))
-        self.timeInputTo = wx.TextCtrl(self, size=(140, -1))
+        self.timeInputFrom = TimeSelector(self)
+        self.timeInputTo = TimeSelector(self)
         timeBox.Add(self.timeLabel)
         timeBox.Add(self.timeInputFrom)
         timeBox.Add(self.timeInputTo)
+
+        self.typeCheckBoxGroup = MultiCheckBox(self, ticket_type)
 
         mailBox = wx.BoxSizer(wx.VERTICAL)
         self.mailLabel = wx.StaticText(self, label=email)
@@ -54,10 +58,11 @@ class MPanel(wx.Panel):
 
         self.log = wx.TextCtrl(self, -1, "",
                                style=wx.TE_RICH | wx.TE_MULTILINE)
+
         mainSizer.Add(cityBox, 0, wx.ALL, 5)
         mainSizer.Add(dateBox, 0, wx.ALL, 5)
         mainSizer.Add(timeBox, 0, wx.ALL, 5)
-        mainSizer.Add(MultiCheckBox(self, ticket_type), 0, wx.ALL, 5)
+        mainSizer.Add(self.typeCheckBoxGroup, 0, wx.ALL, 5)
         mainSizer.Add(mailBox, 0, wx.ALL, 5)
         mainSizer.Add(self.startButton, 0, wx.ALL, 5)
         mainSizer.Add(self.log, 1, wx.EXPAND | wx.ALL, 5)
@@ -73,6 +78,9 @@ class MPanel(wx.Panel):
         time_limit = ['00:00', '23:23']
         email = 'archieyang@foxmail.com'
         ticket_t = [0, 2, 3]
+        print self.typeCheckBoxGroup.getValue()
+        print self.timeInputFrom.getValue() + "--" + self.timeInputTo.getValue()
+        print self.startDateCombo.getValue()
         workerThread = checker.Checker(dates, time_limit,
                                        cities, ticket_t, email, self)
         workerThread.start()
