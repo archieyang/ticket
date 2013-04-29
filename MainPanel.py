@@ -1,6 +1,7 @@
 # coding=utf-8
 import wx
 import checker
+import datetime
 from checker import ticket_type, train_class
 from MultiCheckBox import MultiCheckBox
 from TimeSelector import TimeSelector
@@ -36,7 +37,8 @@ class MPanel(wx.Panel):
         self.dateLabel = wx.StaticText(self, label=date)
 
         self.startDateCombo = DateSelector(self)
-        dateBox.AddMany([self.dateLabel, self.startDateCombo])
+        self.endDateCombo = DateSelector(self)
+        dateBox.AddMany([self.dateLabel, self.startDateCombo, self.endDateCombo])
 
         timeBox = wx.BoxSizer(wx.HORIZONTAL)
         self.timeLabel = wx.StaticText(self, label=time)
@@ -78,7 +80,7 @@ class MPanel(wx.Panel):
             self.checking = False
             return
         print self.mailInput.GetValue()
-        dates = ['2013-05-01']
+
         cities = []
         cities.append(self.fromCityInput.GetValue())
         cities.append(self.toCityInput.GetValue())
@@ -87,9 +89,13 @@ class MPanel(wx.Panel):
         ticket_t = self.typeCheckBoxGroup.getValue()
         train_c = self.classCheckBoxGroup.getValue()
 
-        # print self.typeCheckBoxGroup.getValue()
-        # print self.timeInputFrom.getValue() + "--" + self.timeInputTo.getValue()
-        # print self.startDateCombo.getValue()
+        print self.startDateCombo.getValue().isoformat(), self.endDateCombo.getValue().isoformat()
+
+        dates = []
+        startDay = self.startDateCombo.getValue()
+        while(startDay <= self.endDateCombo.getValue()):
+            dates.append(startDay)
+            startDay = startDay + datetime.timedelta(days=1)
 
         self.workerThread = checker.Checker(dates, time_limit,
                                             cities, ticket_t, train_c, email, self)

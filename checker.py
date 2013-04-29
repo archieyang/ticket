@@ -12,8 +12,8 @@ import wx
 
 ticket_type = [u'商务座', u'特等座', u'一等座', u'二等座',
                u'高级软卧', u'软卧', u'硬卧', u'软座', u'硬座', u'无座']
-train_class = [u'全部', u'动车', u'Z字头', u'T字头', u'K字头', u'其他']
-train_class_code = ['QB%23', 'D%23', 'Z%23', 'T%23', 'K%23', 'QT%23']
+train_class = [u'动车', u'Z字头', u'T字头', u'K字头', u'其他']
+train_class_code = ['D%23', 'Z%23', 'T%23', 'K%23', 'QT%23']
 
 
 class Checker(threading.Thread):
@@ -67,14 +67,14 @@ def check_ticket(train_date, time_limit, cities, selected_type, train_class, ema
     origin, dest = get_city_code(cities[0]), get_city_code(cities[1])
     # origin, dest = "BJP", "SHH"
     tclass_str = "".join([train_class_code[i] for i in train_class])
-    print tclass_str
+    # print tclass_str
     query_url = 'http://dynamic.12306.cn/otsquery/query/queryRemanentTicketAction.do?method=queryLeftTicket&orderRequest.train_date=%s\
 &orderRequest.from_station_telecode=%s&orderRequest.to_station_telecode=%s&orderRequest.train_no=&trainPassType=QB&trainClass=%s&\
 includeStudent=00&seatTypeAndNum=&orderRequest.start_time_str=00%%3A00--24%%3A00' % (train_date, origin, dest, tclass_str)
-    print query_url
+    # print query_url
 
     json_res = urllib2.urlopen(query_url).read()
-    print json_res
+    # print json_res
     pattern = re.compile(r'<span id=.*?\\\\n|<span id=.*?"time"')
     item_list = pattern.findall(json_res)
 
@@ -85,7 +85,7 @@ includeStudent=00&seatTypeAndNum=&orderRequest.start_time_str=00%%3A00--24%%3A00
             continue
 
         train_num = train_num_item.group(0)[25:-8]
-        print train_num
+        # print train_num
         time_pattern = re.compile("[0-9]{2}:[0-9]{2}")
         train_time = time_pattern.findall(item)
 
@@ -106,7 +106,7 @@ includeStudent=00&seatTypeAndNum=&orderRequest.start_time_str=00%%3A00--24%%3A00
             tt = ticket_type[res]
             ticket_msg = u'日期: %s 车次: %s 席别: %s' % (train_date, train_num, tt)
             wx.CallAfter(logging, u"快抢票！" + ticket_msg)
-            # send_mail_to(email_address, ticket_msg.encode('utf8'))
+            send_mail_to(email_address, ticket_msg)
 
         else:
             wx.CallAfter(logging, "===" + train_num + "No Ticket ===")
@@ -119,7 +119,6 @@ def calc_time(hour, minute):
 def strip_comma(seat_list):
     res = -1
     for index, item in seat_list:
-        print item
         if item[0] == ',':
             res = True
             return index
@@ -130,17 +129,16 @@ def send_mail_to(mailto, ticket_msg):
     """
     Send mails to customers
     """
-    mailfrom = 'train.ticket.archie@gmail.com'
+    mailfrom = u'train.ticket.archie@gmail.com'
     smtp = smtplib.SMTP('smtp.gmail.com', 587)
     smtp.ehlo()
     smtp.starttls()
     smtp.ehlo()
     smtp.login(mailfrom, 'ticketticket')
 
-    header = 'To:' + mailto + '\n' + 'From: ' + mailfrom + \
-        '\n' + 'Subject:FIND A TICKET FOR YOU !!!  ' + ticket_msg
-
-    smtp.sendmail(mailfrom, mailto, header)
+    header = u'To:' + mailto + u'\n' + u'From: ' + mailfrom + \
+        u'\n' + u'Subject:FIND A TICKET FOR YOU !!!  ' + ticket_msg
+    smtp.sendmail(mailfrom, mailto, header.encode('utf-8'))
     smtp.quit()
 
 

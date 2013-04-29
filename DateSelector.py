@@ -1,6 +1,7 @@
 # coding=utf-8
 import wx
 import time
+import datetime
 
 
 class DateSelector(wx.BoxSizer):
@@ -79,4 +80,4 @@ class DateSelector(wx.BoxSizer):
         if year is None or mon is None or day is None:
             return None
 
-        return year + "-" + mon + "-" + day
+        return datetime.date(int(year), int(mon), int(day))
