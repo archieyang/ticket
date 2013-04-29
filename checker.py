@@ -5,18 +5,20 @@ import smtplib
 import time
 import threading
 import wx
-#######################################################
-#Bugs here. The checker only checks the D and G train.#
-#T,K and normal train need to be added.               #
-#######################################################
+#
+# Bugs here. The checker only checks the D and G train.#
+# T,K and normal train need to be added.               #
+#
 
 ticket_type = [u'商务座', u'特等座', u'一等座', u'二等座',
                u'高级软卧', u'软卧', u'硬卧', u'软座', u'硬座', u'无座']
+train_class = [u'全部', u'动车', u'Z字头', u'T字头', u'K字头', u'其他']
+train_class_code = ['QB%23', 'D%23', 'Z%23', 'T%23', 'K%23', 'QT%23']
 
 
 class Checker(threading.Thread):
 
-    def __init__(self, train_date, time_limit, cities, selected_type, email_address, window):
+    def __init__(self, train_date, time_limit, cities, selected_type, train_c, email_address, window):
         threading.Thread.__init__(self)
         self.dates = train_date
         self.time = time_limit
@@ -24,13 +26,16 @@ class Checker(threading.Thread):
         self.type = selected_type
         self.email_address = email_address
         self.window = window
+        self.t_class = train_c
+        self._stop = threading.Event()
 
     def run(self):
-        while True:
+        looping = True
+        while looping:
             wx.CallAfter(self.window.logging, 'Start checking...')
             for date in self.dates:
                 check_ticket(date, self.time, self.cities,
-                             self.type, self.email_address, self.window.logging)
+                             self.type, self.t_class, self.email_address, self.window.logging)
                 # try:
 
                 # except Exception, e:
@@ -41,35 +46,46 @@ class Checker(threading.Thread):
             s = SHOW_MSG + time.strftime(ISOTIMEFORMAT, time.localtime())
             wx.CallAfter(self.window.logging, s)
             wx.CallAfter(self.window.logging, 'Wait 30 seconds...')
-            time.sleep(30)
+            for i in range(0, 30):
+                time.sleep(2)
+                if self._stop.isSet():
+                    looping = False
+                    break
+
+        print "Thread ended."
+
+    def stop(self):
+        self._stop.set()
 
 
-def check_ticket(train_date, time_limit, cities, selected_type, email_address, logging):
+def check_ticket(train_date, time_limit, cities, selected_type, train_class, email_address, logging):
     """
     Check function
     """
     timelimit_start = calc_time(time_limit[0][:2], time_limit[0][-2:])
     timelimit_end = calc_time(time_limit[1][:2], time_limit[1][-2:])
-    # print cities[0].encode('utf-8')
     origin, dest = get_city_code(cities[0]), get_city_code(cities[1])
-
+    # origin, dest = "BJP", "SHH"
+    tclass_str = "".join([train_class_code[i] for i in train_class])
+    print tclass_str
     query_url = 'http://dynamic.12306.cn/otsquery/query/queryRemanentTicketAction.do?method=queryLeftTicket&orderRequest.train_date=%s\
-&orderRequest.from_station_telecode=%s&orderRequest.to_station_telecode=%s&orderRequest.train_no=&trainPassType=QB&trainClass=D%%23&\
-includeStudent=00&seatTypeAndNum=&orderRequest.start_time_str=00%%3A00--24%%3A00' % (train_date, origin, dest)
+&orderRequest.from_station_telecode=%s&orderRequest.to_station_telecode=%s&orderRequest.train_no=&trainPassType=QB&trainClass=%s&\
+includeStudent=00&seatTypeAndNum=&orderRequest.start_time_str=00%%3A00--24%%3A00' % (train_date, origin, dest, tclass_str)
+    print query_url
 
     json_res = urllib2.urlopen(query_url).read()
+    print json_res
     pattern = re.compile(r'<span id=.*?\\\\n|<span id=.*?"time"')
     item_list = pattern.findall(json_res)
 
     for item in item_list:
-        num_pattern = re.compile(">(D|G|C)[0-9]+<")
+        num_pattern = re.compile(r"onmouseout='onStopOut\(\)'>.+?<\\/span>")
         train_num_item = num_pattern.search(item)
-
         if train_num_item is None:
             continue
 
-        train_num = train_num_item.group(0)[1:-1]
-
+        train_num = train_num_item.group(0)[25:-8]
+        print train_num
         time_pattern = re.compile("[0-9]{2}:[0-9]{2}")
         train_time = time_pattern.findall(item)
 
@@ -103,6 +119,7 @@ def calc_time(hour, minute):
 def strip_comma(seat_list):
     res = -1
     for index, item in seat_list:
+        print item
         if item[0] == ',':
             res = True
             return index

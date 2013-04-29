@@ -1,7 +1,7 @@
 # coding=utf-8
 import wx
 import checker
-from checker import ticket_type
+from checker import ticket_type, train_class
 from MultiCheckBox import MultiCheckBox
 from TimeSelector import TimeSelector
 from DateSelector import DateSelector
@@ -11,6 +11,7 @@ class MPanel(wx.Panel):
 
     """docstring for ClassName"""
     def __init__(self, parent):
+        self.checking = False
         date = "Date"
         fromCity = 'From'
         toCity = 'To'
@@ -45,6 +46,7 @@ class MPanel(wx.Panel):
         timeBox.Add(self.timeInputFrom)
         timeBox.Add(self.timeInputTo)
 
+        self.classCheckBoxGroup = MultiCheckBox(self, train_class)
         self.typeCheckBoxGroup = MultiCheckBox(self, ticket_type)
 
         mailBox = wx.BoxSizer(wx.VERTICAL)
@@ -62,6 +64,7 @@ class MPanel(wx.Panel):
         mainSizer.Add(cityBox, 0, wx.ALL, 5)
         mainSizer.Add(dateBox, 0, wx.ALL, 5)
         mainSizer.Add(timeBox, 0, wx.ALL, 5)
+        mainSizer.Add(self.classCheckBoxGroup, 0, wx.ALL, 5)
         mainSizer.Add(self.typeCheckBoxGroup, 0, wx.ALL, 5)
         mainSizer.Add(mailBox, 0, wx.ALL, 5)
         mainSizer.Add(self.startButton, 0, wx.ALL, 5)
@@ -70,20 +73,28 @@ class MPanel(wx.Panel):
         self.SetSizerAndFit(mainSizer)
 
     def OnStartClick(self, e):
+        if self.checking:
+            self.workerThread.stop()
+            self.checking = False
+            return
         print self.mailInput.GetValue()
-        dates = ['2013-04-30']
+        dates = ['2013-05-01']
         cities = []
         cities.append(self.fromCityInput.GetValue())
         cities.append(self.toCityInput.GetValue())
-        time_limit = ['00:00', '23:23']
-        email = 'archieyang@foxmail.com'
-        ticket_t = [0, 2, 3]
-        print self.typeCheckBoxGroup.getValue()
-        print self.timeInputFrom.getValue() + "--" + self.timeInputTo.getValue()
-        print self.startDateCombo.getValue()
-        workerThread = checker.Checker(dates, time_limit,
-                                       cities, ticket_t, email, self)
-        workerThread.start()
+        time_limit = [self.timeInputFrom.getValue(), self.timeInputTo.getValue()]
+        email = self.mailInput.GetValue()
+        ticket_t = self.typeCheckBoxGroup.getValue()
+        train_c = self.classCheckBoxGroup.getValue()
+
+        # print self.typeCheckBoxGroup.getValue()
+        # print self.timeInputFrom.getValue() + "--" + self.timeInputTo.getValue()
+        # print self.startDateCombo.getValue()
+
+        self.workerThread = checker.Checker(dates, time_limit,
+                                            cities, ticket_t, train_c, email, self)
+        self.workerThread.start()
+        self.checking = True
 
     def logging(self, msg):
         self.log.AppendText(msg+'\n')
