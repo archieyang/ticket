@@ -57,6 +57,8 @@ class MPanel(wx.Panel):
         mailBox.Add(self.mailLabel)
         mailBox.Add(self.mailInput)
 
+        self.rememberCheckbox = wx.CheckBox(self, label="Remember Settings")
+
         self.startButton = wx.Button(self, label=start)
         self.Bind(wx.EVT_BUTTON, self.OnStartClick, self.startButton)
 
@@ -69,12 +71,14 @@ class MPanel(wx.Panel):
         mainSizer.Add(self.classCheckBoxGroup, 0, wx.ALL, 5)
         mainSizer.Add(self.typeCheckBoxGroup, 0, wx.ALL, 5)
         mainSizer.Add(mailBox, 0, wx.ALL, 5)
+        mainSizer.Add(self.rememberCheckbox, 0, wx.ALL, 5)
         mainSizer.Add(self.startButton, 0, wx.ALL, 5)
         mainSizer.Add(self.log, 1, wx.EXPAND | wx.ALL, 5)
 
         self.SetSizerAndFit(mainSizer)
 
     def OnStartClick(self, e):
+
         if self.checking:
             self.workerThread.stop()
             self.checking = False
@@ -93,13 +97,31 @@ class MPanel(wx.Panel):
 
         dates = []
         startDay = self.startDateCombo.getValue()
-        while(startDay <= self.endDateCombo.getValue()):
-            dates.append(startDay)
-            startDay = startDay + datetime.timedelta(days=1)
+        endDay = self.endDateCombo.getValue()
+        aDay = startDay
+        if self.rememberCheckbox.IsChecked():
+            setting_list = []
+            setting_list.extend(cities)
+            setting_list.append(startDay.isoformat())
+            setting_list.append(endDay.isoformat())
+            setting_list.extend(time_limit)
+            setting_list.append(email)
+            setting_list.extend([str(x) for x in ticket_t])
+            setting_list.extend([str(x) for x in train_c])
+
+            setting_str = " ".join(setting_list)
+            print setting_str
+
+        while(aDay <= endDay):
+            dates.append(aDay)
+            aDay = aDay + datetime.timedelta(days=1)
+
+        for d in dates:
+            print d
 
         self.workerThread = checker.Checker(dates, time_limit,
                                             cities, ticket_t, train_c, email, self)
-        self.workerThread.start()
+        # self.workerThread.start()
         self.checking = True
 
     def logging(self, msg):
