@@ -33,3 +33,6 @@ class TimeSelector(wx.BoxSizer):
         if len(m) < 2:
             m = "0" + m
         return h + ":" + m
+    def setValue(self, formatted_time):
+        self.hourCombo.SetValue(formatted_time[0:2])
+        self.minCombo.SetValue(formatted_time[3:5])

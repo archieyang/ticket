@@ -6,6 +6,8 @@ from checker import ticket_type, train_class
 from MultiCheckBox import MultiCheckBox
 from TimeSelector import TimeSelector
 from DateSelector import DateSelector
+from settings import info
+import os
 
 
 class MPanel(wx.Panel):
@@ -58,12 +60,28 @@ class MPanel(wx.Panel):
         mailBox.Add(self.mailInput)
 
         self.rememberCheckbox = wx.CheckBox(self, label="Remember Settings")
+        self.rememberCheckbox.SetValue(True)
 
         self.startButton = wx.Button(self, label=start)
         self.Bind(wx.EVT_BUTTON, self.OnStartClick, self.startButton)
 
         self.log = wx.TextCtrl(self, -1, "",
                                style=wx.TE_RICH | wx.TE_MULTILINE)
+
+        if 'config' in os.listdir('.'):
+            old_info = info()
+            old_info.load()
+            # print old_info.cities[0]
+            self.fromCityInput.SetValue(old_info.cities[0])
+            self.toCityInput.SetValue(old_info.cities[1])
+            # print old_info.dates[0]
+            self.startDateCombo.setValue(old_info.dates[0])
+            self.endDateCombo.setValue(old_info.dates[1])
+            self.timeInputFrom.setValue(old_info.time_limit[0])
+            self.timeInputTo.setValue(old_info.time_limit[1])
+            self.classCheckBoxGroup.setValue(old_info.train_c)
+            self.typeCheckBoxGroup.setValue(old_info.ticket_t)
+            self.mailInput.SetValue(old_info.email)
 
         mainSizer.Add(cityBox, 0, wx.ALL, 5)
         mainSizer.Add(dateBox, 0, wx.ALL, 5)
@@ -92,7 +110,7 @@ class MPanel(wx.Panel):
         email = self.mailInput.GetValue()
         ticket_t = self.typeCheckBoxGroup.getValue()
         train_c = self.classCheckBoxGroup.getValue()
-
+        print train_c
         print self.startDateCombo.getValue().isoformat(), self.endDateCombo.getValue().isoformat()
 
         dates = []
@@ -100,17 +118,8 @@ class MPanel(wx.Panel):
         endDay = self.endDateCombo.getValue()
         aDay = startDay
         if self.rememberCheckbox.IsChecked():
-            setting_list = []
-            setting_list.extend(cities)
-            setting_list.append(startDay.isoformat())
-            setting_list.append(endDay.isoformat())
-            setting_list.extend(time_limit)
-            setting_list.append(email)
-            setting_list.extend([str(x) for x in ticket_t])
-            setting_list.extend([str(x) for x in train_c])
-
-            setting_str = " ".join(setting_list)
-            print setting_str
+            s_info = info([startDay.isoformat(), endDay.isoformat()], time_limit, cities, ticket_t, train_c, email)
+            s_info.save()
 
         while(aDay <= endDay):
             dates.append(aDay)
@@ -121,7 +130,7 @@ class MPanel(wx.Panel):
 
         self.workerThread = checker.Checker(dates, time_limit,
                                             cities, ticket_t, train_c, email, self)
-        # self.workerThread.start()
+        self.workerThread.start()
         self.checking = True
 
     def logging(self, msg):

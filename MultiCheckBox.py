@@ -22,3 +22,7 @@ class MultiCheckBox(wx.BoxSizer):
                 res.append(num)
 
         return res
+
+    def setValue(self, vlist):
+        for v in vlist:
+            self.cbList[v].SetValue(True)

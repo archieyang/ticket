@@ -81,3 +81,10 @@ class DateSelector(wx.BoxSizer):
             return None
 
         return datetime.date(int(year), int(mon), int(day))
+
+    def setValue(self, iso_date):
+        self.yearCombo.SetValue(iso_date[0:4])
+        self.yearEvt(None)
+        self.monthCombo.SetValue(iso_date[5:7])
+        self.monthEvt(None)
+        self.dayCombo.SetValue(iso_date[8:10])
