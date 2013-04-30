@@ -1,1 +1,1 @@
-{"dates": ["2013-04-30", "2013-05-02"], "ticket_t": [3, 5, 8, 9], "train_c": [0, 1], "time": ["00:01", "17:26"], "cities": ["\u5317\u4eac", "\u4e0a\u6d77"], "email": "archieyang@foxmail.com"}
+{"dates": ["2013-05-02", "2013-05-03"], "ticket_t": [2, 3, 5, 8, 9], "train_c": [4], "time": ["00:01", "17:26"], "cities": ["\u5317\u4eac", "\u4e0a\u6d77"], "email": "archieyang@foxmail.com"}

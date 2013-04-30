@@ -113,23 +113,13 @@ class MPanel(wx.Panel):
         print train_c
         print self.startDateCombo.getValue().isoformat(), self.endDateCombo.getValue().isoformat()
 
-        dates = []
         startDay = self.startDateCombo.getValue()
         endDay = self.endDateCombo.getValue()
-        aDay = startDay
+        s_info = info([startDay.isoformat(), endDay.isoformat()], time_limit, cities, ticket_t, train_c, email)
         if self.rememberCheckbox.IsChecked():
-            s_info = info([startDay.isoformat(), endDay.isoformat()], time_limit, cities, ticket_t, train_c, email)
             s_info.save()
 
-        while(aDay <= endDay):
-            dates.append(aDay)
-            aDay = aDay + datetime.timedelta(days=1)
-
-        for d in dates:
-            print d
-
-        self.workerThread = checker.Checker(dates, time_limit,
-                                            cities, ticket_t, train_c, email, self)
+        self.workerThread = checker.Checker(s_info, self)
         self.workerThread.start()
         self.checking = True
 

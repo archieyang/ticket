@@ -5,10 +5,8 @@ import smtplib
 import time
 import threading
 import wx
-#
-# Bugs here. The checker only checks the D and G train.#
-# T,K and normal train need to be added.               #
-#
+import datetime
+
 
 ticket_type = [u'商务座', u'特等座', u'一等座', u'二等座',
                u'高级软卧', u'软卧', u'硬卧', u'软座', u'硬座', u'无座']
@@ -18,24 +16,32 @@ train_class_code = ['D%23', 'Z%23', 'T%23', 'K%23', 'QT%23']
 
 class Checker(threading.Thread):
 
-    def __init__(self, train_date, time_limit, cities, selected_type, train_c, email_address, window):
+    def __init__(self, train_info, window):
         threading.Thread.__init__(self)
-        self.dates = train_date
-        self.time = time_limit
-        self.cities = cities
-        self.type = selected_type
-        self.email_address = email_address
+        aDay = self.isoToDate(train_info.dates[0])
+        endDay = self.isoToDate(train_info.dates[1])
+        self.dates = []
+        while(aDay <= endDay):
+            self.dates.append(aDay)
+            aDay = aDay + datetime.timedelta(days=1)
+
+        self.time = train_info.time_limit
+        self.cities = train_info.cities
+        self.type = train_info.ticket_t
+        self.email_address = train_info.email
         self.window = window
-        self.t_class = train_c
+        self.t_class = train_info.train_c
         self._stop = threading.Event()
 
+    def isoToDate(self, isoDate):
+        return datetime.date(int(isoDate[0:4]), int(isoDate[5:7]), int(isoDate[8:10]))
+
     def run(self):
-        looping = True
-        while looping:
+        self.looping = True
+        while self.looping:
             wx.CallAfter(self.window.logging, 'Start checking...')
             for date in self.dates:
-                check_ticket(date, self.time, self.cities,
-                             self.type, self.t_class, self.email_address, self.window.logging)
+                self.check_ticket(date)
                 # try:
 
                 # except Exception, e:
@@ -49,7 +55,7 @@ class Checker(threading.Thread):
             for i in range(0, 30):
                 time.sleep(2)
                 if self._stop.isSet():
-                    looping = False
+                    self.looping = False
                     break
 
         print "Thread ended."
@@ -57,90 +63,87 @@ class Checker(threading.Thread):
     def stop(self):
         self._stop.set()
 
-
-def check_ticket(train_date, time_limit, cities, selected_type, train_class, email_address, logging):
-    """
-    Check function
-    """
-    timelimit_start = calc_time(time_limit[0][:2], time_limit[0][-2:])
-    timelimit_end = calc_time(time_limit[1][:2], time_limit[1][-2:])
-    origin, dest = get_city_code(cities[0]), get_city_code(cities[1])
-    # origin, dest = "BJP", "SHH"
-    tclass_str = "".join([train_class_code[i] for i in train_class])
-    # print tclass_str
-    query_url = 'http://dynamic.12306.cn/otsquery/query/queryRemanentTicketAction.do?method=queryLeftTicket&orderRequest.train_date=%s\
+    def check_ticket(self, train_date):
+        """
+        Check function
+        """
+        timelimit_start = self.calc_time(self.time[0][:2], self.time[0][-2:])
+        timelimit_end = self.calc_time(self.time[1][:2], self.time[1][-2:])
+        origin, dest = self.get_city_code(self.cities[0]), self.get_city_code(self.cities[1])
+        # origin, dest = "BJP", "SHH"
+        tclass_str = "".join([train_class_code[i] for i in self.t_class])
+        # print tclass_str
+        query_url = 'http://dynamic.12306.cn/otsquery/query/queryRemanentTicketAction.do?method=queryLeftTicket&orderRequest.train_date=%s\
 &orderRequest.from_station_telecode=%s&orderRequest.to_station_telecode=%s&orderRequest.train_no=&trainPassType=QB&trainClass=%s&\
 includeStudent=00&seatTypeAndNum=&orderRequest.start_time_str=00%%3A00--24%%3A00' % (train_date, origin, dest, tclass_str)
-    # print query_url
+        print query_url
 
-    json_res = urllib2.urlopen(query_url).read()
-    # print json_res
-    pattern = re.compile(r'<span id=.*?\\\\n|<span id=.*?"time"')
-    item_list = pattern.findall(json_res)
+        json_res = urllib2.urlopen(query_url).read()
+        # print json_res
+        pattern = re.compile(r'<span id=.*?\\\\n|<span id=.*?"time"')
+        item_list = pattern.findall(json_res)
 
-    for item in item_list:
-        num_pattern = re.compile(r"onmouseout='onStopOut\(\)'>.+?<\\/span>")
-        train_num_item = num_pattern.search(item)
-        if train_num_item is None:
-            continue
+        for item in item_list:
+            num_pattern = re.compile(r"onmouseout='onStopOut\(\)'>.+?<\\/span>")
+            train_num_item = num_pattern.search(item)
+            if train_num_item is None:
+                continue
 
-        train_num = train_num_item.group(0)[25:-8]
-        # print train_num
-        time_pattern = re.compile("[0-9]{2}:[0-9]{2}")
-        train_time = time_pattern.findall(item)
+            train_num = train_num_item.group(0)[25:-8]
+            # print train_num
+            time_pattern = re.compile("[0-9]{2}:[0-9]{2}")
+            train_time = time_pattern.findall(item)
 
-        time_thresh_value = calc_time(train_time[0][:2], train_time[0][-2:])
+            time_thresh_value = self.calc_time(train_time[0][:2], train_time[0][-2:])
 
-        if time_thresh_value < timelimit_start or time_thresh_value > timelimit_end:
-            continue
+            if time_thresh_value < timelimit_start or time_thresh_value > timelimit_end:
+                continue
 
-        ticket_count_pattern = re.compile("--|<font color='darkgray'>|,[0-9]+")
-        slist = ticket_count_pattern.findall(item)[1:]
-        seat = [(t_type, slist[t_type])for t_type in selected_type]
-        res = strip_comma(seat)
+            ticket_count_pattern = re.compile("--|<font color='darkgray'>|,[0-9]+")
+            slist = ticket_count_pattern.findall(item)[1:]
+            seat = [(t_type, slist[t_type])for t_type in self.type]
+            res = self.strip_comma(seat)
 
-        if res != -1:
-            # print train_date, train_num
-            # print train_time
-            # print seat
-            tt = ticket_type[res]
-            ticket_msg = u'日期: %s 车次: %s 席别: %s' % (train_date, train_num, tt)
-            wx.CallAfter(logging, u"快抢票！" + ticket_msg)
-            send_mail_to(email_address, ticket_msg)
+            if res != -1:
+                # print train_date, train_num
+                # print train_time
+                # print seat
+                tt = ticket_type[res]
+                ticket_msg = u'日期: %s 车次: %s 席别: %s' % (train_date, train_num, tt)
+                wx.CallAfter(self.window.logging, u"快抢票！" + ticket_msg)
+                self.send_mail_to(self.email_address, ticket_msg)
+                if self._stop.isSet():
+                    return
 
-        else:
-            wx.CallAfter(logging, "===" + train_num + "No Ticket ===")
+            else:
+                wx.CallAfter(self.window.logging, "===" + train_num + "No Ticket ===")
 
+    def calc_time(self, hour, minute):
+        return (int(hour))*60 + int(minute)
 
-def calc_time(hour, minute):
-    return (int(hour))*60 + int(minute)
+    def strip_comma(self, seat_list):
+        res = -1
+        for index, item in seat_list:
+            if item[0] == ',':
+                res = True
+                return index
+        return res
 
+    def send_mail_to(self, mailto, ticket_msg):
+        """
+        Send mails to customers
+        """
+        mailfrom = u'train.ticket.archie@gmail.com'
+        smtp = smtplib.SMTP('smtp.gmail.com', 587)
+        smtp.ehlo()
+        smtp.starttls()
+        smtp.ehlo()
+        smtp.login(mailfrom, 'ticketticket')
 
-def strip_comma(seat_list):
-    res = -1
-    for index, item in seat_list:
-        if item[0] == ',':
-            res = True
-            return index
-    return res
-
-
-def send_mail_to(mailto, ticket_msg):
-    """
-    Send mails to customers
-    """
-    mailfrom = u'train.ticket.archie@gmail.com'
-    smtp = smtplib.SMTP('smtp.gmail.com', 587)
-    smtp.ehlo()
-    smtp.starttls()
-    smtp.ehlo()
-    smtp.login(mailfrom, 'ticketticket')
-
-    header = u'To:' + mailto + u'\n' + u'From: ' + mailfrom + \
-        u'\n' + u'Subject:FIND A TICKET FOR YOU !!!  ' + ticket_msg
-    smtp.sendmail(mailfrom, mailto, header.encode('utf-8'))
-    smtp.quit()
-
+        header = u'To:' + mailto + u'\n' + u'From: ' + mailfrom + \
+            u'\n' + u'Subject:FIND A TICKET FOR YOU !!!  ' + ticket_msg
+        smtp.sendmail(mailfrom, mailto, header.encode('utf-8'))
+        smtp.quit()
 
 # def input_date():
 #     """
@@ -158,13 +161,10 @@ def send_mail_to(mailto, ticket_msg):
 #             print u'重新输入日期（格式为(yyyy-mm-dd) 输入END停止输入)'
 #             date = raw_input()
 #         d.append(date)
-
 #     print u'所选日期:'
 #     for adate in d:
 #         print adate
 #     return d
-
-
 # def input_timelimit():
 #     """
 #     Enter the time limit
@@ -172,31 +172,26 @@ def send_mail_to(mailto, ticket_msg):
 #     start_time = get_formatted_time(u'输入发车时间范围-开始时间:(hh:mm)')
 #     end_time = get_formatted_time(u'输入发车时间范围-结束时间:(hh:mm)')
 #     return start_time, end_time
-
-
 # def get_formatted_time(s):
 #     print s
 #     time = raw_input()
 #     while(len(time) != 5):
 #         print '错误，请注意格式!'
 #         time = raw_input(u'再次' + s)
-
 #     return time
-
-
-def get_city_code(city_name):
-    """
-    Transform city name into telecode
-    """
-    req = urllib2.Request('http://dynamic.12306.cn/otsquery/js/common\
+    def get_city_code(self, city_name):
+        """
+        Transform city name into telecode
+        """
+        req = urllib2.Request('http://dynamic.12306.cn/otsquery/js/common\
 /station_name.js?version=1.40')
-    city_list = urllib2.urlopen(req).read()
-    # print city_list.decode('utf8').encode('gbk')
+        city_list = urllib2.urlopen(req).read()
+        # print city_list.decode('utf8').encode('gbk')
 
-    city_name = city_name.encode('utf8')
-    city_rx = re.compile('\|'+city_name + '\|.+?\|')
-    city_code = city_rx.search(city_list).group(0)[-4:-1]
-    return city_code
+        city_name = city_name.encode('utf8')
+        city_rx = re.compile('\|'+city_name + '\|.+?\|')
+        city_code = city_rx.search(city_list).group(0)[-4:-1]
+        return city_code
 
 
 # def input_cities():
